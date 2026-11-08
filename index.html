@@ -62,6 +62,21 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:"Tajawal","Segoe
 @keyframes tw{50%{opacity:.55;transform:translate(-50%,-50%) scale(.85)}}
 .skymsg{text-align:center;color:var(--rose);font-size:1.7rem;line-height:1.6;min-height:3.4rem;margin:1rem 0 0}
 @media (prefers-reduced-motion:reduce){.star,.sky i{animation:none}}
+.balloons{position:relative;height:16rem;border:2px dashed #f6c1d0;border-radius:24px;overflow:hidden}
+.bal{position:absolute;width:4.2rem;height:6.3rem;margin-left:-2.1rem;padding:0;border:0;background:none;cursor:pointer;animation:bob 3.2s ease-in-out infinite}
+.bal svg{width:100%;height:100%;display:block}
+.bal.pop{animation:none;transform:scale(1.7);opacity:0;transition:transform .25s,opacity .25s}
+.bal:focus-visible{outline:3px solid var(--rose);border-radius:50%}
+@keyframes bob{50%{transform:translateY(-10px)}}
+.balmsg{text-align:center;color:var(--rose);font-size:1.9rem;line-height:1.6;min-height:3.6rem;margin:1rem 0 0}
+@media (prefers-reduced-motion:reduce){.bal{animation:none}}
+.scratch-box{position:relative;width:min(100%,22rem);height:9rem;margin:0 auto;border-radius:24px;overflow:hidden;background:var(--back);box-shadow:0 12px 26px -18px rgba(90,20,60,.5)}
+.scratch-box .reveal{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2rem;color:var(--rose);font-size:2.2rem;line-height:1.3}
+.scratch-box .reveal svg{width:1.8rem;height:1.8rem;fill:var(--rose)}
+.scratch-box canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair;transition:opacity .6s}
+.wish:not([hidden]){box-shadow:0 0 0 0 rgba(224,80,122,.45);animation:wishpulse 1.8s infinite}
+@keyframes wishpulse{70%{box-shadow:0 0 0 14px rgba(224,80,122,0)}100%{box-shadow:0 0 0 0 rgba(224,80,122,0)}}
+@media (prefers-reduced-motion:reduce){.wish{animation:none !important}}
 /* Petals */
 .petal{position:fixed;top:-30px;width:14px;height:18px;border-radius:150% 0 150% 0;background:#e8879c;opacity:.8;pointer-events:none;z-index:5;animation:fall linear forwards}
 @keyframes fall{0%{transform:translate3d(0,0,0) rotate(0)}50%{transform:translate3d(var(--sway),55vh,0) rotate(180deg)}100%{transform:translate3d(calc(var(--sway) * -1),115vh,0) rotate(400deg)}}
@@ -132,6 +147,18 @@ h2{text-align:center;font-size:clamp(1.7rem,5.5vw,2.3rem);margin:4rem 0 .3rem}
     <p class="display wishmsg" id="wishMsg" hidden>الأمنية دي هتتحقق إن شاء الله</p>
   </div>
 
+  <h2 class="display">فرقعي البالونات</h2>
+  <p class="sub">كل بالونة فيها كلمة</p>
+  <div class="balloons" id="balloons" dir="ltr"></div>
+  <p class="display balmsg" id="balMsg" aria-live="polite"></p>
+
+  <h2 class="display">خربشي يا سوسو</h2>
+  <p class="sub">خربشي على الكارت بإصبعك</p>
+  <div class="scratch-box">
+    <div class="reveal display"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.2 2.8 4.5 6.4 4.5c2 0 3.7 1.1 4.6 2.7h2c.9-1.6 2.6-2.7 4.6-2.7 3.6 0 5.5 3.7 4 7.2C19.5 16.4 12 21 12 21z"/></svg><span>إنتي عمري</span></div>
+    <canvas id="scratch" aria-label="كارت للخربشة"></canvas>
+  </div>
+
   <h2 class="display">نجمة سهيلة</h2>
   <p class="sub">دوسي على أي نجمة… وفيه نجمة مخصوصة</p>
   <div class="sky" id="sky" dir="ltr"></div>
@@ -139,7 +166,7 @@ h2{text-align:center;font-size:clamp(1.7rem,5.5vw,2.3rem);margin:4rem 0 .3rem}
 
   <div class="end">
     <p class="display" id="endText"></p>
-    <button type="button" id="moreBtn">مطر ورد تاني</button>
+    <button type="button" id="moreBtn">ألعاب نارية تاني</button>
   </div>
 </main>
 
@@ -204,6 +231,7 @@ cake.addEventListener("click", function(){
 $("wishBtn").addEventListener("click", function(){
   var f = $("flame"); if(f) f.style.display = "none";
   $("wishBtn").hidden = true; $("wishMsg").hidden = false;
+  fireworks();
   petals(40, true);
 });
 
@@ -227,6 +255,100 @@ $("sky").addEventListener("click", function(e){
   if(b.classList.contains("big")){ $("skyMsg").textContent = STAR_MSG; petals(30, true); }
   else { $("skyMsg").textContent = sayings[sayIdx++ % sayings.length]; }
 });
+var BAL_WORDS = ["بحبك", "يا", "سهيلة", "لآخر", "العمر"];
+var balColors = ["#f08aa0", "#e0507a", "#f6b9c6", "#d9566f", "#f4a0b5"];
+var balPos = [[12,12],[30,38],[50,8],[69,36],[87,12]];
+var balHtml = "";
+balPos.forEach(function(p, n){
+  var c = balColors[n];
+  balHtml += '<button class="bal" type="button" aria-label="بالونة" style="left:' + p[0] + '%;top:' + p[1] + '%;animation-delay:' + (n*0.5) + 's">' +
+    '<svg viewBox="0 0 60 90" aria-hidden="true"><ellipse cx="30" cy="32" rx="26" ry="30" fill="' + c + '"/>' +
+    '<ellipse cx="21" cy="20" rx="6" ry="9" fill="#fff" opacity=".35"/>' +
+    '<path d="M26 61l4 6 4-6z" fill="' + c + '"/>' +
+    '<path d="M30 67c-6 8 6 12 0 22" fill="none" stroke="#c9a0ac" stroke-width="1.5"/></svg></button>';
+});
+$("balloons").innerHTML = balHtml;
+var balIdx = 0;
+$("balloons").addEventListener("click", function(e){
+  var b = e.target.closest(".bal"); if(!b || b.classList.contains("pop")) return;
+  b.classList.add("pop");
+  setTimeout(function(){ b.style.visibility = "hidden"; }, 260);
+  balIdx++;
+  $("balMsg").textContent = BAL_WORDS.slice(0, balIdx).join(" ");
+  if(balIdx === BAL_WORDS.length) petals(50, true);
+});
+
+var fw = document.createElement("canvas");
+fw.setAttribute("aria-hidden", "true");
+fw.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:20";
+document.body.appendChild(fw);
+var fx = fw.getContext("2d"), parts = [], fwRun = false;
+function fwSize(){ var r = window.devicePixelRatio || 1; fw.width = innerWidth*r; fw.height = innerHeight*r; fx.setTransform(r, 0, 0, r, 0, 0); }
+fwSize(); window.addEventListener("resize", fwSize);
+var fwColors = ["#ff8fab", "#ffb3c6", "#ffd166", "#ffffff", "#e0507a", "#ffe9a8"];
+function burst(x, y){
+  var col = fwColors[Math.floor(Math.random()*fwColors.length)];
+  for(var i = 0; i < 46; i++){
+    var a = Math.random()*Math.PI*2, sp = 1.5 + Math.random()*4.2;
+    parts.push({x:x, y:y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, l:1, c:Math.random() < 0.7 ? col : fwColors[Math.floor(Math.random()*fwColors.length)]});
+  }
+  if(!fwRun){ fwRun = true; requestAnimationFrame(fwTick); }
+}
+function fwTick(){
+  fx.clearRect(0, 0, innerWidth, innerHeight);
+  parts = parts.filter(function(p){ return p.l > 0; });
+  parts.forEach(function(p){
+    p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.vx *= 0.985; p.l -= 0.014;
+    fx.globalAlpha = Math.max(p.l, 0); fx.fillStyle = p.c;
+    fx.beginPath(); fx.arc(p.x, p.y, 2.2, 0, 6.283); fx.fill();
+  });
+  fx.globalAlpha = 1;
+  if(parts.length) requestAnimationFrame(fwTick); else fwRun = false;
+}
+function fireworks(){
+  if(reduce) return;
+  for(var k = 0; k < 7; k++){
+    setTimeout(function(){ burst(innerWidth*(0.15 + Math.random()*0.7), innerHeight*(0.12 + Math.random()*0.4)); }, k*450);
+  }
+}
+if("IntersectionObserver" in window){
+  var ioEnd = new IntersectionObserver(function(es){ es.forEach(function(en){ if(en.isIntersecting){ fireworks(); ioEnd.disconnect(); } }); }, {threshold:0.5});
+  ioEnd.observe(document.querySelector(".end"));
+}
+
+var scratchInit = false;
+function initScratch(){
+  if(scratchInit) return;
+  scratchInit = true;
+  var c = $("scratch"), box = c.parentNode, w = box.clientWidth, h = box.clientHeight, r = window.devicePixelRatio || 1;
+  c.width = w*r; c.height = h*r;
+  var x = c.getContext("2d"); x.scale(r, r);
+  var g = x.createLinearGradient(0, 0, w, h);
+  g.addColorStop(0, "#f6b9c6"); g.addColorStop(0.5, "#e0507a"); g.addColorStop(1, "#f08aa0");
+  x.fillStyle = g; x.fillRect(0, 0, w, h);
+  x.fillStyle = "#fff"; x.font = "700 22px Tajawal, sans-serif";
+  x.textAlign = "center"; x.textBaseline = "middle"; x.direction = "rtl";
+  x.fillText("خربشي هنا يا سوسو", w/2, h/2);
+  var down = false, done = false, n = 0;
+  function pos(e){ var b = c.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; }
+  function check(){
+    if(done) return;
+    var d = x.getImageData(0, 0, c.width, c.height).data, cleared = 0, total = 0;
+    for(var i = 3; i < d.length; i += 160){ total++; if(d[i] === 0) cleared++; }
+    if(cleared/total > 0.45){ done = true; c.style.opacity = 0; c.style.pointerEvents = "none"; petals(40, true); }
+  }
+  function scratch(e){
+    var p = pos(e);
+    x.globalCompositeOperation = "destination-out";
+    x.beginPath(); x.arc(p[0], p[1], 24, 0, Math.PI*2); x.fill();
+    if(++n % 8 === 0) check();
+  }
+  c.addEventListener("pointerdown", function(e){ down = true; c.setPointerCapture(e.pointerId); scratch(e); });
+  c.addEventListener("pointermove", function(e){ if(down) scratch(e); });
+  c.addEventListener("pointerup", function(){ down = false; check(); });
+  c.addEventListener("pointercancel", function(){ down = false; });
+}
+
 var colors = ["#e8879c","#f4b6c2","#d9566f","#f9c6d2","#c04a78"];
 function petals(n, fast){
   if(reduce) return;
@@ -263,6 +385,7 @@ $("openBtn").addEventListener("click", function(){
       c.textContent = "";
       petals(70, true);
       $("main").hidden = false;
+      initScratch();
       $("intro").classList.add("gone");
       setTimeout(function(){ $("intro").style.display = "none"; window.scrollTo(0,0); }, 900);
       return;
@@ -273,7 +396,7 @@ $("openBtn").addEventListener("click", function(){
   }
   tick();
 });
-$("moreBtn").addEventListener("click", function(){ petals(60, true); });
+$("moreBtn").addEventListener("click", function(){ fireworks(); petals(25, true); });
 </script>
 </body>
 </html>
